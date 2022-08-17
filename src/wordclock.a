@@ -1,0 +1,62 @@
+;license:MIT
+;(c) 2022 by 4am
+;
+!cpu 6502
+!to "build/WRDCLOCK.SYSTEM",plain
+*=$2000
+
+         !source "src/constants.a"              ; no code
+         !source "src/wordclock.init.a"         ; one-time initialization code, exits via Start
+         !source "src/hw.accel.a"
+
+FirstMover
+!pseudopc $800 {
+Start
+@clear   sta   $2000, y
+         iny
+         bne   @clear
+         inc   @clear+2
+         dex
+         bne   @clear
+         bit   GFXMODE
+         jsr   DrawDisplay           ; draw title screen
+         bit   $c010
+-        bit   $c000
+         bpl   -
+         lda   PRODOS_HAS_CLOCK
+         cmp   #$60                  ; 'RTS' opcode
+         bne   MainLoop              ; clock installed -> go to main display loop
+         jsr   ResetWords            ; no clock -> demo mode
+         ldx   #kDemo
+         jsr   HighlightWord
+         jsr   DrawDisplay
+MainLoop
+         jsr   GetCurrentTime
+         beq   +                     ; Z=1 if time unchanged since last call
+         jsr   UpdateDisplay
++        lda   KBD
+         bpl   MainLoop
+Quit
+         jsr   IsIIgs
+         bcs   @NotGS
+         pla
+         sta   CLOCKCTL              ; restore border and text colors
+         pla
+         sta   TBCOLOR
+@NotGS   inc   $3F4                  ; disengage reset vector
+         jsr   EnableAccelerator     ; reenable fast mode or accelerator, if any
+         bit   CLEARKBD
+         jsr   PRODOS_MLI
+         !byte $65
+         !word +
++        !byte 4
+
+         !source "src/hw.iigs.a"
+         !source "src/hw.clock.a"
+         !source "src/fx.hgr.1bit.fizzle.a"
+         !source "src/ui.display.a"
+         !source "src/ui.font.curious.fred.a"
+         !source "src/ui.font.curious.fred.data.a"
+         !source "src/wordclock.data.a"
+}
+LastMover

@@ -1,0 +1,49 @@
+;license:MIT
+;(c) 2022 by 4am
+;
+
+; soft switches
+KBD =          $C000      ; last key pressed (if any)
+CLEARKBD =     $C010      ; clear last key pressed
+TBCOLOR =      $C022      ; IIgs text foreground and background colors
+CLOCKCTL =     $C034      ; bits 0-3 are IIgs border color
+GFXMODE =      $C050
+TEXTMODE =     $C051
+FULLGFX =      $C052
+MIXGFX =       $C053
+PAGE1 =        $C054
+PAGE2 =        $C055
+LORES =        $C056
+HIRES =        $C057
+
+; ROM routines and addresses
+ROM_MACHINEID= $FBB3
+ROM_GSID     = $FE1F
+
+; ProDOS addresses
+PRODOS_MLI          = $BF00
+PRODOS_HAS_CLOCK    = $BF06
+PRODOS_CLOCK_MINUTE = $BF92
+PRODOS_CLOCK_HOUR   = $BF93
+
+; application addresses
+hgr_base_ptr = $F0        ; word
+char_index   = $F2        ; byte
+char_row     = $F3        ; byte
+char_column  = $F4        ; byte
+mask0        = $F5        ; byte
+mask1        = $F6        ; byte
+mask2        = $F7        ; byte
+mask3        = $F8        ; byte
+x            = $F9        ; byte
+v            = $FA        ; byte
+h            = $FB        ; byte
+LastTime     = $FC        ; byte
+tmp          = $FD        ; byte
+
+DisableAccelerator = $300
+EnableAccelerator  = DisableAccelerator+3
+HGRLO        = $1C00      ; [0xC0 bytes, page-aligned]
+HGRHI        = $1D00      ; [0xC0 bytes, page-aligned]
+fizzleaddrs  = $1E00      ; [0x100 bytes, page-aligned]
+fizzlemasks  = $1F00      ; [0x100 bytes, page-aligned]

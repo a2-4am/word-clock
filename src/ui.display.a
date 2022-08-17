@@ -1,0 +1,327 @@
+;license:MIT
+;(c) 2022 by 4am
+;
+; functions to update and draw the display of letters as time phrases
+;
+; public functions:
+; - DrawDisplay
+; - UpdateDisplay
+; - HighlightWord
+
+DoHourAsSuffix ; [private]
+         jsr   HighlightHourAsSuffix
+         ; /!\ execution falls through here
+;------------------------------------------------------------------------------
+; DrawDisplay
+; redraw all letters with their current appearance (on hi-res page 2, offscreen)
+; then fizzle-fade onto hi-res page 1 (displayed)
+;
+; in:    none
+; out:   all registers and flags clobbered
+;------------------------------------------------------------------------------
+DrawDisplay
+         lda   #239
+         sta   x
+         lda   #11
+         sta   v
+--       lda   #19
+         sta   h
+-        ldx   x
+         lda   Words, x
+         ldx   v
+         ldy   h
+         jsr   DrawLargeCharacter
+         dec   x
+         dec   h
+         bpl   -
+         dec   v
+         bpl   --
+;Fizzle
+         jsr   +                     ; copy fizzle to zero page
+         jsr   $1                    ; call fizzle
++        ldx   #(fizzend-fizzstart)  ; restore zero page
+-        ldy   fizzstart-1, x
+         lda   $FF, x
+         sty   $FF, x
+         sta   fizzstart-1, x
+         dex
+         bne   -
+         rts
+
+;------------------------------------------------------------------------------
+; UpdateDisplay
+; recalculate the time phrase and redraw on screen
+;
+; in:    MLI has been called to populate time values in ProDOS global page
+; out:   all registers and flags clobbered
+;------------------------------------------------------------------------------
+UpdateDisplay
+         jsr   ResetWords
+;
+; minute = 0
+; 'HH oclock'
+;
+         lda   PRODOS_CLOCK_HOUR
+         ldy   PRODOS_CLOCK_MINUTE
+         bne   @maybe1
+         jsr   IsMidnightOrNoon
+         beq   DoHourAsSuffix        ; exits via DrawDisplay
+         ldx   #kOclock
+         jsr   HighlightWord
+@doHourAsPrefix
+         jsr   HighlightHourAsPrefix
+         jmp   DrawDisplay
+;
+; minute = 1
+; 'one minute past HH'
+;
+@maybe1
+         cpy   #1
+         bne   @maybe2to12
+         ldx   #kMinute
+-        jsr   HighlightWord
+         ldx   #kPast
+         jsr   HighlightWord
+         jsr   HighlightMinuteAsPrefix
+         jmp   DoHourAsSuffix        ; exits via DrawDisplay
+;
+; minute = 2..12
+; 'MM minutes past HH'
+;
+@maybe2to12
+         cpy   #2
+         bcc   @maybe13
+         cpy   #13
+         bcs   @maybe13
+         ldx   #kMinutes
+         bne   -                     ; always branches
+;
+; minute = 13, 14, 16, 17, 18, 19
+; 'HH MM'
+;
+@maybe13
+         cpy   #13
+         bne   @maybe14
+         ldx   #k13
+-        jsr   HighlightWord
+         jmp   @doHourAsPrefix       ; exits via DrawDisplay
+@maybe14
+         cpy   #14
+         bne   @maybe16
+         ldx   #k14
+         bne   -                     ; always branches
+@maybe16
+         cpy   #16
+         bne   @maybe17
+         ldx   #k16
+         bne   -                     ; always branches
+@maybe17
+         cpy   #17
+         bne   @maybe18
+         ldx   #k17
+         bne   -                     ; always branches
+@maybe18
+         cpy   #18
+         bne   @maybe19
+         ldx   #k18
+         bne   -                     ; always branches
+@maybe19
+         cpy   #19
+         bne   @maybe15
+         ldx   #k19
+         bne   -                     ; always branches
+;
+; minute = 15
+; 'quarter past HH'
+;
+@maybe15
+         cpy   #15
+         bne   @maybe20
+         ldx   #kQuarter
+-        jsr   HighlightWord
+         ldx   #kPast
+         jsr   HighlightWord
+         jmp   DoHourAsSuffix        ; exits via DrawDisplay
+;
+; minute = 20
+; 'twenty past HH'
+;
+@maybe20
+         cpy   #20
+         bne   @maybe30
+         ldx   #k20
+         bne   -                     ; always branches
+;
+; minute = 30
+; 'half past HH'
+;
+@maybe30
+         cpy   #30
+         bne   @maybe40
+         ldx   #kHalf
+         bne   -                     ; always branches
+;
+; minute = 40
+; 'twenty to HH+1'
+;
+@maybe40
+         cpy   #40
+         bne   @maybe45
+         ldx   #k20
+-        jsr   HighlightWord
+         ldx   #kTo
+         jsr   HighlightWord
+         clc
+         adc   #1                    ; A = next hour
+         jmp   DoHourAsSuffix        ; exits via DrawDisplay
+;
+; minute = 45
+; 'quarter to HH+1'
+;
+@maybe45
+         cpy   #45
+         bne   @maybe50
+         ldx   #kQuarter
+         bne   -                     ; always branches
+;
+; minute = 50
+; 'ten to HH+1'
+;
+@maybe50
+         cpy   #50
+         bne   @maybe55
+         ldx   #kPre10
+         bne   -                     ; always branches
+;
+; minute = 55
+; 'five to HH+1'
+;
+@maybe55
+         cpy   #55
+         bne   @maybeNot
+         ldx   #kPre5
+         bne   -                     ; always branches
+;
+; minute = 21..29, 31..39, 41..44, 46..49, 51..54, 56..59
+; 'HH MM'
+;
+@maybeNot
+         jsr   HighlightHourAsPrefix
+         cpy   #30
+         bcs   +
+         lda   #20
+         ldx   #k20min
+         bne   @finalMinute          ; always branches
++        cpy   #40
+         bcs   +
+         lda   #30
+         ldx   #k30min
+         bne   @finalMinute          ; always branches
++        cpy   #50
+         bcs   +
+         lda   #40
+         ldx   #k40min
+         bne   @finalMinute          ; always branches
++        lda   #50
+         ldx   #k50min
+@finalMinute
+         sta   @finalMinuteOffset
+         jsr   HighlightWord
+         tya
+         sec
+@finalMinuteOffset=*+1
+         sbc   #$FD                  ; SMC
+         jsr   HighlightMinuteAsSuffix
+         jmp   DrawDisplay
+
+HighlightMinuteAsPrefix ; [private]
+         dey
+         sty   tmp
+         ldx   tmp
+         bpl   HighlightWord         ; always branches
+
+HighlightHourAsPrefix ; [private]
+         jsr   HighlightAMorPM
+         cmp   #12
+         bcc   +
+         ;C=1
+         sbc   #12
++        tax
+         dex
+         bpl   HighlightWord
+         ldx   #kPre12
+         bne   HighlightWord         ; always branches
+
+HighlightHourAsSuffix ; [private]
+         cmp   #24                   ; can happen if phrase is '...to HH+1'
+         bne   +
+         lda   #0
++        jsr   IsMidnightOrNoon
+         bne   @notMidnightOrNoon
+         ldx   #kNoon
+         bvs   HighlightWord         ; V from IsMidnightOrNoon
+         ldx   #kMidnight
+         bne   HighlightWord         ; always branches
+@notMidnightOrNoon
+         jsr   HighlightAMorPM
+         cmp   #12
+         bcc   HighlightMinuteAsSuffix
+         ;C=1
+         sbc   #12
+         ; /!\ execution falls through here
+HighlightMinuteAsSuffix ; [private]
+         clc
+         adc   #kPost1-1
+         tax
+         ; /!\ execution falls through here
+;------------------------------------------------------------------------------
+; HighlightWord
+; mark a word within the word table as 'enabled'
+;
+; in:    X = word index (e.g. kPre1, kPast, &c.)
+; out:   preserves A/Y
+;------------------------------------------------------------------------------
+HighlightWord
+         pha
+         tya
+         pha
+         lda   WordLengths, x
+         tay
+         lda   WordPositions, x
+         tax
+-        lda   Words, x
+         and   #$DF
+         sta   Words, x
+         inx
+         dey
+         bne   -
+         pla
+         tay
+         pla
+         rts
+
+HighlightAMorPM ; [private]
+         ldx   #kAM
+         cmp   #12
+         bcc   HighlightWord
+         ldx   #kPM
+         bne   HighlightWord         ; always branches
+
+;------------------------------------------------------------------------------
+; IsMidnightOrNoon [private]
+; decide if hour phrase needs special handling
+;
+; in:    A = hours since midnight (0..23)
+; out:   Z=1 if A is either 0 or 12
+;        V=0 if A=0
+;        V=1 if A=12
+;        Z=0 if A is neither 0 nor 12
+;        preserves X/Y
+;------------------------------------------------------------------------------
+IsMidnightOrNoon
+         clv
+         cmp   #0
+         beq   +
+         bit   +
+         cmp   #12
++        rts

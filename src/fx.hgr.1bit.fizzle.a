@@ -1,0 +1,49 @@
+;license:MIT
+;(c) 2017-2022 by qkumba/4am/John Brooks
+;
+; HGR 1-pixel 'fizzle' transition effect
+;
+
+; This version is designed to run from zero page. You should copy
+; fizzstart..fizzend to $00 and JSR $0001 to execute the fizzle, then
+; optionally restore zero page afterwards.
+;
+; The fizzleaddrs and fizzlemasks tables must be initialized before calling.
+; They are not modified during execution, so if you have space to keep them,
+; you only have to initialize them once.
+;
+; Also note the entry requirements for X and Y registers.
+
+fizzstart
+!pseudopc 0 {
+; in: X,Y=0
+         !byte 0
+loop     txa
+loop1    eor   #$B4                  ; LFSR form 0xB400 with period 65535
+         tax                         ; X is LFSR high byte, Y is LFSR low byte
+loop2    lda   fizzleaddrs, x        ; which means X is the index into the base address lookup table
+         sta   <dst+2                ; and Y is the offset from the base address
+         eor   #$60                  ; which works out well with the available addressing modes
+         sta   <src+2
+         lda   (<dst+1), y
+src      eor   $FD00, y              ; merge source and destination bits
+         and   fizzlemasks, x        ; isolate the bits to replace, zero the rest
+         eor   (<dst+1), y           ; unmerge source and destination bits, leaves 'to keep' destination bits intact
+dst      sta   $FD00, y              ; write the result
+         txa
+         lsr
+         tax
+         tya
+         ror
+         tay
+         bcc   loop2                 ; C modified by ror
+         bne   loop                  ; Z modified by tay
+         bit   $C000
+         bmi   @exit
+         txa
+         bne   loop1
+         lda   (src+1), y            ; last lousy byte (because LFSR never hits 0)
+         sta   (dst+1), y
+@exit    rts
+}
+fizzend

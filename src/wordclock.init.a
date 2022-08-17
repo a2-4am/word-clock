@@ -1,0 +1,108 @@
+;license:MIT
+;(c) 2022 by 4am
+;
+; initialize program, generate lookup tables and dynamically generated code
+;
+
+         ; build EnableAccelerator and DisableAccelerator functions
+         ; and copy them into place
+         jsr   BuildAcceleratorFunction
+         sta   @accel+1
+         sty   @accel+2
+         dex
+@accel   lda   $FDFD, x              ; SMC
+         sta   DisableAccelerator, x
+         dex
+         bpl   @accel
+
+         ;X=$FF
+         stx   LastTime
+         inx                         ; create copymask table for fizzle
+         ;X=0
+         lda   #$01
+--       ldy   #$20
+         ora   #%10000000
+-        sta   fizzlemasks, x
+         inx
+         dey
+         bne   -
+         asl
+         bne   --
+
+         ;X=0
+         clc
+--       ldy   #$20                  ; create address lookup table for fizzle
+         tya
+-        sta   fizzleaddrs, x
+         adc   #1
+         inx
+         dey
+         bne   -
+         txa
+         bne   --
+
+         ;X=0
+-        txa                         ; build HGR row lookup table
+         and   #$F8
+         bpl   +
+         ora   #5
++        asl
+         bpl   +
+         ora   #5
++        asl
+         asl
+         sta   HGRLO, x
+         txa
+         and   #7
+         rol
+         asl   HGRLO, x
+         rol
+         ora   #$20
+         sta   HGRHI, x
+         inx
+         cpx   #$C0
+         bne   -
+
+-        inc   FM+2                  ; relocate program code to $800
+         inc   FMDEST+2
+         lda   FM+2
+         cmp   #>LastMover
+         bcc   -
+         ;X=0
+FM       lda   FirstMover, x
+FMDEST   sta   $800, x
+         inx
+         bne   FM
+         dec   FM+2
+         dec   FMDEST+2
+         lda   FMDEST+2
+         cmp   #$08
+         bcs   FM
+
+         jsr   IsIIgs                ; set border color to black (IIgs only)
+         bcs   @NotGS
+         lda   TBCOLOR
+         pha
+         lda   CLOCKCTL
+         pha
+         and   #$F0
+         sta   CLOCKCTL
+         lda   #$F0
+         sta   TBCOLOR
+@NotGS
+         lda   #<Quit                ; cleanup and quit on reset
+         sta   $3F2
+         lda   #>Quit
+         sta   $3F3
+         eor   #$A5
+         sta   $3F4
+         jsr   DisableAccelerator    ; set to 1MHz
+         bit   CLEARKBD
+         bit   PAGE1
+         bit   FULLGFX
+         bit   HIRES
+         bit   TEXTMODE
+         ldx   #$20
+         ldy   #$00
+         lda   #$80
+         jmp   Start

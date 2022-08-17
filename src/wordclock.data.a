@@ -1,0 +1,202 @@
+;license:MIT
+;(c) 2022 by 4am
+;
+; word indexes and tables
+;
+; public functions:
+; - ResetWords
+;
+; public variables:
+; - Words
+; - WordPositions
+; - WordLengths
+
+; indexes into WordPositions and WordLengths
+kPre1    = 0              ; must be 0
+kPre2    = 1              ; kPre1..kPre12 must be sequential
+kPre3    = 2
+kPre4    = 3
+kPre5    = 4
+kPre6    = 5
+kPre7    = 6
+kPre8    = 7
+kPre9    = 8
+kPre10   = 9
+kPre11   = 10
+kPre12   = 11
+kHalf    = 12
+kQuarter = 13
+kMinutes = 14
+kMinute  = 15
+k20      = 16
+k13      = 17
+k14      = 18
+kPast    = 19
+kTo      = 20
+k16      = 21
+k17      = 22
+k20min   = 23
+k18      = 24
+k19      = 25
+k30min   = 26
+k40min   = 27
+k50min   = 28
+kOclock  = 29
+kClock   = 30
+kPost1   = 31             ; kPost1..kPost12 must be sequential
+kPost2   = 32
+kPost3   = 33
+kPost4   = 34
+kPost5   = 35
+kPost6   = 36
+kPost7   = 37
+kPost8   = 38
+kPost9   = 39
+kPost10  = 40
+kPost11  = 41
+kPost12  = 42
+kAM      = 43
+kPM      = 44
+kWord    = 45
+kBy      = 46
+kDemo    = 47
+kNoon    = 48
+kMidnight= 49
+
+WordPositions
+         !byte 2          ; kPre1
+         !byte 0          ; kPre2
+         !byte 8          ; kPre3
+         !byte 41         ; kPre4
+         !byte 23         ; kPre5
+         !byte 57         ; kPre6
+         !byte 35         ; kPre7
+         !byte 4          ; kPre8
+         !byte 31         ; kPre9
+         !byte 20         ; kPre10
+         !byte 26         ; kPre11
+         !byte 45         ; kPre12
+         !byte 80         ; kHalf
+         !byte 13         ; kQuarter
+         !byte 85         ; kMinutes
+         !byte 85         ; kMinute
+         !byte 51         ; k20
+         !byte 60         ; k13
+         !byte 72         ; k14
+         !byte 100        ; kPast
+         !byte 103        ; kTo
+         !byte 110        ; k16
+         !byte 91         ; k17
+         !byte 120        ; k20min
+         !byte 140        ; k18
+         !byte 147        ; k19
+         !byte 126        ; k30min
+         !byte 160        ; k40min
+         !byte 165        ; k50min
+         !byte 104        ; kOclock
+         !byte 105        ; kClock
+         !byte 197        ; kPost1
+         !byte 195        ; kPost2
+         !byte 187        ; kPost3
+         !byte 176        ; kPost4
+         !byte 200        ; kPost5
+         !byte 224        ; kPost6
+         !byte 207        ; kPost7
+         !byte 191        ; kPost8
+         !byte 211        ; kPost9
+         !byte 204        ; kPost10
+         !byte 214        ; kPost11
+         !byte 170        ; kPost12
+         !byte 235        ; kAM
+         !byte 238        ; kPM
+         !byte 68         ; kWord
+         !byte 132        ; kBy
+         !byte 220        ; kDemo
+         !byte 116        ; kNoon
+         !byte 180        ; kMidnight
+
+WordLengths
+         !byte 3          ; kPre1
+         !byte 3          ; kPre2
+         !byte 5          ; kPre3
+         !byte 4          ; kPre4
+         !byte 4          ; kPre5
+         !byte 3          ; kPre6
+         !byte 5          ; kPre7
+         !byte 5          ; kPre8
+         !byte 4          ; kPre9
+         !byte 3          ; kPre10
+         !byte 6          ; kPre11
+         !byte 6          ; kPre12
+         !byte 4          ; kHalf
+         !byte 7          ; kQuarter
+         !byte 7          ; kMinutes
+         !byte 6          ; kMinute
+         !byte 6          ; k20
+         !byte 8          ; k13
+         !byte 8          ; k14
+         !byte 4          ; kPast
+         !byte 2          ; kTo
+         !byte 7          ; k16
+         !byte 9          ; k17
+         !byte 6          ; k20min
+         !byte 8          ; k18
+         !byte 8          ; k19
+         !byte 6          ; k30min
+         !byte 5          ; k40min
+         !byte 5          ; k50min
+         !byte 6          ; kOclock
+         !byte 5          ; kClock
+         !byte 3          ; kPost1
+         !byte 3          ; kPost2
+         !byte 5          ; kPost3
+         !byte 4          ; kPost4
+         !byte 4          ; kPost5
+         !byte 3          ; kPost6
+         !byte 5          ; kPost7
+         !byte 5          ; kPost8
+         !byte 4          ; kPost9
+         !byte 3          ; kPost10
+         !byte 6          ; kPost11
+         !byte 6          ; kPost12
+         !byte 2          ; kAM
+         !byte 2          ; kPM
+         !byte 4          ; kWord
+         !byte 2          ; kBy
+         !byte 4          ; kDemo
+         !byte 4          ; kNoon
+         !byte 8          ; kMidnight
+
+;------------------------------------------------------------------------------
+; ResetWords
+; clear word table, reverting all letters to disabled appearance
+;
+; in:    none
+; out:   $BF90..$BF93 contains standard ProDOS time information
+;        Z=0 if time has changed since the last call to this routine
+;        Z=1 if time is unchanged
+;------------------------------------------------------------------------------
+ResetWords
+         ldx   #240
+-        lda   Words-1, x
+         ora   #$E0
+         sta   Words-1, x
+         dex
+         bne   -
+         rts
+
+; lowercase letters are displayed as 'disabled' (dark color + draw every other line)
+; uppercase letters are displayed as 'enabled' (white + draw every line)
+Words
+         !text "twoneighthreequarter"
+         !text "tenfivelevenineseven"
+         !text "ofourtwelvetwentysix"
+         !text "thirteenWORDfourteen"
+         !text "halfaminuteseventeen"
+         !text "pastoCLOCKsixteenoon"
+         !text "twentythirtyBYtempus"
+         !text "eighteenineteenfugit"
+         !text "fortyfiftytwelveFOUR"
+         !text "midnighthreeightwone"
+         !text "fivetensevenineleven"
+         !text "demosixsweetdreAMspm"

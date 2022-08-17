@@ -1,0 +1,46 @@
+;license:MIT
+;(c) 2022 by 4am
+;
+; clock functions
+;
+; public functions:
+; - GetCurrentTime
+;
+
+;------------------------------------------------------------------------------
+; GetCurrentTime
+; ask ProDOS for the current time, or construct a fake autoincremented value
+; if no clock is available
+;
+; in:    none
+; out:   $BF90..$BF93 contains standard ProDOS time information that represent
+;          either the actual time or some reasonable fake value
+;        Z=0 if time has changed since the last call to this routine
+;        Z=1 if time is unchanged
+;------------------------------------------------------------------------------
+GetCurrentTime
+         lda   PRODOS_HAS_CLOCK
+         cmp   #$60                  ; 'RTS' opcode
+         beq   @fakeTime             ; no clock -> autoincrement (demo mode)
+         jsr   PRODOS_MLI
+         !byte $82                   ; MLI_GETTIME
+         !word @zero
+         lda   PRODOS_CLOCK_MINUTE
+-        cmp   LastTime              ; initialized to #$FF at program startup
+         sta   LastTime
+         rts
+@fakeTime
+         inc   PRODOS_CLOCK_MINUTE
+         lda   PRODOS_CLOCK_MINUTE
+         cmp   #60
+         bcc   -
+@zero=*+1
+         lda   #0
+         sta   PRODOS_CLOCK_MINUTE
+         inc   PRODOS_CLOCK_HOUR
+         lda   PRODOS_CLOCK_HOUR
+         cmp   #24
+         bcc   -
+         lda   #0
+         sta   PRODOS_CLOCK_HOUR
+         beq   -                     ; always branches

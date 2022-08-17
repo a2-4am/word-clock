@@ -1,0 +1,217 @@
+;license:MIT
+;(c) 2022 by 4am
+;
+; font drawing routines
+;
+; Public functions:
+; - DrawLargeCharacter
+;
+
+;------------------------------------------------------------------------------
+; DrawLargeCharacter
+; not-unrolled version, optimized for code size
+; because drawing is off-screen (hi-res page 2) and not performance sensitive
+;
+; in:    A contains ASCII character
+;        X contains logical line number
+;        Y contains logical column number
+; out:   preserves X/Y
+;        clobbers A/all flags
+;------------------------------------------------------------------------------
+DrawLargeCharacter
+         and   #$7F
+
+         cmp   #$61
+         bcc   @enabled
+         ;C=1
+         sbc   #$20
+         pha
+         lda   #%10000000            ; set up bitmasks for 'greyed out' characters
+         sta   mask0
+         sta   mask1
+         lda   #%11010101
+         sta   mask2
+         lda   #%10101010
+         sta   mask3
+         bne   @done_mask            ; always branches
+@enabled pha
+         lda   #%11111111
+         sta   mask0
+         sta   mask1
+         sta   mask2
+         sta   mask3
+@done_mask
+         pla
+         sec
+         sbc   #$41
+         sta   char_index
+         txa
+         pha
+         tya
+         pha
+         asl
+         tay
+         sty   char_column
+         txa
+         asl
+         asl
+         asl
+         asl
+         sta   char_row
+
+         jsr   ComputeDrawAddresses
+         lda   #%10000000            ; row 0 is always blank
+         sta   (hgr_base_ptr), y
+         iny
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   LeftFontRow1, x       ; draw row 1, byte 0
+         and   mask2
+         sta   (hgr_base_ptr), y
+         iny
+         lda   RightFontRow1, x      ; draw row 1, byte 1
+         and   mask3
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   LeftFontRow2, x       ; draw row 2, byte 0
+         and   mask0
+         sta   (hgr_base_ptr), y
+         iny
+         lda   RightFontRow2, x      ; draw row 2, byte 1
+         and   mask1
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   LeftFontRow3, x       ; draw row 3, byte 0
+         and   mask2
+         sta   (hgr_base_ptr), y
+         iny
+         lda   RightFontRow3, x      ; draw row 3, byte 1
+         and   mask3
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   LeftFontRow4, x       ; draw row 4, byte 0
+         and   mask0
+         sta   (hgr_base_ptr), y
+         iny
+         lda   RightFontRow4, x      ; draw row 4, byte 1
+         and   mask1
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   LeftFontRow5, x       ; draw row 5, byte 0
+         and   mask2
+         sta   (hgr_base_ptr), y
+         iny
+         lda   RightFontRow5, x      ; draw row 5, byte 1
+         and   mask3
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   LeftFontRow6, x       ; draw row 6, byte 0
+         and   mask0
+         sta   (hgr_base_ptr), y
+         iny
+         lda   RightFontRow6, x      ; draw row 6, byte 1
+         and   mask1
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   LeftFontRow7, x       ; draw row 7, byte 0
+         and   mask2
+         sta   (hgr_base_ptr), y
+         iny
+         lda   RightFontRow7, x      ; draw row 7, byte 1
+         and   mask3
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   LeftFontRow8, x       ; draw row 8, byte 0
+         and   mask0
+         sta   (hgr_base_ptr), y
+         iny
+         lda   RightFontRow8, x      ; draw row 8, byte 1
+         and   mask1
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   LeftFontRow9, x       ; draw row 9, byte 0
+         and   mask2
+         sta   (hgr_base_ptr), y
+         iny
+         lda   RightFontRow9, x      ; draw row 9, byte 1
+         and   mask3
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   LeftFontRow10, x       ; draw row 10, byte 0
+         and   mask0
+         sta   (hgr_base_ptr), y
+         iny
+         lda   RightFontRow10, x      ; draw row 10, byte 1
+         and   mask1
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   LeftFontRow11, x       ; draw row 11, byte 0
+         and   mask2
+         sta   (hgr_base_ptr), y
+         iny
+         lda   RightFontRow11, x      ; draw row 11, byte 1
+         and   mask3
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   LeftFontRow12, x       ; draw row 12, byte 0
+         and   mask0
+         sta   (hgr_base_ptr), y
+         iny
+         lda   RightFontRow12, x      ; draw row 12, byte 1
+         and   mask1
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   LeftFontRow13, x       ; draw row 13, byte 0
+         and   mask2
+         sta   (hgr_base_ptr), y
+         iny
+         lda   RightFontRow13, x      ; draw row 13, byte 1
+         and   mask3
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   LeftFontRow14, x       ; draw row 14, byte 0
+         and   mask0
+         sta   (hgr_base_ptr), y
+         iny
+         lda   RightFontRow14, x      ; draw row 14, byte 1
+         and   mask1
+         sta   (hgr_base_ptr), y
+
+         jsr   IncAndRecomputeDrawAddresses
+         lda   #%10000000            ; row 15 is always blank
+         sta   (hgr_base_ptr), y
+         iny
+         sta   (hgr_base_ptr), y
+
+         pla
+         tay
+         pla
+         tax
+         rts
+
+IncAndRecomputeDrawAddresses
+         inc   char_row
+ComputeDrawAddresses
+         ldx   char_row
+         lda   HGRLO, x
+         sta   hgr_base_ptr
+         lda   HGRHI, x
+         eor   #$60
+         sta   hgr_base_ptr+1        ; (hgr_base_ptr) -> base address of top row to draw (used for upper-left block of each character)
+         ldx   char_index            ; X = 0-based index into LeftFontRow* array for the character we're drawing
+         ldy   char_column
+         rts
