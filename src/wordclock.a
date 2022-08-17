@@ -20,9 +20,6 @@ Start
          bne   @clear
          bit   GFXMODE
          jsr   DrawDisplay           ; draw title screen
-         bit   $c010
--        bit   $c000
-         bpl   -
          lda   PRODOS_HAS_CLOCK
          cmp   #$60                  ; 'RTS' opcode
          bne   MainLoop              ; clock installed -> go to main display loop
