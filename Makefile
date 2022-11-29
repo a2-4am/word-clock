@@ -17,7 +17,7 @@ ACME=acme
 # https://github.com/mach-kernel/cadius
 CADIUS=cadius
 
-VERSION=1.1
+VERSION=1.1.1
 
 BUILDDISK=build/word-clock-$(VERSION)
 
