@@ -68,7 +68,7 @@
          lda   FM+2
          cmp   #>LastMover
          bcc   -
-         ;X=0
+         ldx   #0
 FM       lda   FirstMover, x
 FMDEST   sta   $800, x
          inx
